@@ -57,11 +57,17 @@ interaction_plots <- function(tablename,
   bound_upper <- max(testdataframe$mean_SHBG)+3*max(testdataframe$se_SHBG)
   bound_diff <- bound_upper - bound_lower
   
-  signif01 <- max(testdataframe$mean_SHBG) + max(testdataframe$se_SHBG) + 0.09*bound_diff
+  signif01 <- max(testdataframe$mean_SHBG) + 
+              max(testdataframe$se_SHBG) + 
+              0.09*bound_diff
   
-  signif02 <- max(testdataframe$mean_SHBG) + max(testdataframe$se_SHBG) + 0.18*bound_diff
+  signif02 <- max(testdataframe$mean_SHBG) + 
+              max(testdataframe$se_SHBG) + 
+              0.18*bound_diff
   
-  signif03 <- max(testdataframe$mean_SHBG) + max(testdataframe$se_SHBG) + 0.27*bound_diff
+  signif03 <- max(testdataframe$mean_SHBG) + 
+              max(testdataframe$se_SHBG) + 
+              0.27*bound_diff
   
   #SNP Allele Naming
   homo_nonref <- paste(quo_name(nonref_allele),
