@@ -7,6 +7,7 @@ library(utils)
 library(plotrix)
 library(ggpubr)
 library(rstatix)
+library(tibble)
 
 interaction_plots <- function(tablename, 
                               pheno, 
@@ -39,34 +40,37 @@ interaction_plots <- function(tablename,
   
   #Creates a dataframe with mean and sd of SHBG, grouped by allele genotype
   testdataframe <- summarise( group_by(sampledatachar, !!SNP),
-                              mean_SHBG = mean(!!pheno),
-                              se_SHBG = std.error(!!pheno))
+                              "Means" = mean(!!pheno),
+                              "SE" = std.error(!!pheno))
   
   #Split data by exposure and genotype then apply mean and sd functions
   exposure_df0 <- summarise( group_by(filter(sampledatachar, !!exposure == 0), !!SNP),
-                          mean_SHBG = mean(!!pheno),
-                          se_SHBG = std.error(!!pheno))
+                          "Means" = mean(!!pheno),
+                          "SE" = std.error(!!pheno))
   exposure_df1 <- summarise( group_by(filter(sampledatachar, !!exposure == 1), !!SNP),
-                          mean_SHBG = mean(!!pheno),
-                          se_SHBG = std.error(!!pheno))
+                          "Means" = mean(!!pheno),
+                          "SE" = std.error(!!pheno))
   exposure_df <- rbind(exposure_df0, exposure_df1)
+  exposure_df <- mutate(exposure_df, Exposure = c(0,0,0,1,1,1), .after = 1)
+  cat("\n\nMean and standard error for SNP values, grouped by exposure:\n\n")
+  cat(format(exposure_df)[c(-1L,-3L)], sep = "\n")
   
   #First Graph Bound Calculations
-  bound_lower <- min(testdataframe$mean_SHBG)-2*max(testdataframe$se_SHBG)
+  bound_lower <- min(testdataframe$Means)-2*max(testdataframe$SE)
   bound_lower[bound_lower < 0] <- 0
-  bound_upper <- max(testdataframe$mean_SHBG)+3*max(testdataframe$se_SHBG)
+  bound_upper <- max(testdataframe$Means)+3*max(testdataframe$SE)
   bound_diff <- bound_upper - bound_lower
   
-  signif01 <- max(testdataframe$mean_SHBG) + 
-              max(testdataframe$se_SHBG) + 
+  signif01 <- max(testdataframe$Means) + 
+              max(testdataframe$SE) + 
               0.09*bound_diff
   
-  signif02 <- max(testdataframe$mean_SHBG) + 
-              max(testdataframe$se_SHBG) + 
+  signif02 <- max(testdataframe$Means) + 
+              max(testdataframe$SE) + 
               0.18*bound_diff
   
-  signif03 <- max(testdataframe$mean_SHBG) + 
-              max(testdataframe$se_SHBG) + 
+  signif03 <- max(testdataframe$Means) + 
+              max(testdataframe$SE) + 
               0.27*bound_diff
   
   #SNP Allele Naming
@@ -102,7 +106,7 @@ interaction_plots <- function(tablename,
            dependent_new ~ Genotype),
     method = "bonferroni"),
     "p.adj")
-  
+
   stat.test2 <- add_significance(adjust_pvalue(
     t_test(sampledatachar, 
            dependent_new ~ exposure_new), 
@@ -114,6 +118,17 @@ interaction_plots <- function(tablename,
            dependent_new ~ Genotype), 
     method = "bonferroni"), 
     "p.adj")
+  
+  #Statistics Outputs in Console
+  session_options <- options(pillar.neg = FALSE)
+  
+  stat_output <- select(stat.test3, group1, group2, statistic, p:p.adj.signif)
+  cat("\n\nUnstratified SNP statistics and p-values:\n\n")
+  cat(format(stat_output)[c(-1L,-3L)], sep = "\n")
+  
+  stat_output2 <- select(stat.test, 1, group1, group2, statistic, p:p.adj.signif)
+  cat("\n\nStatistics and p-values stratified by",quo_name(exposure),":", "\n\n")
+  cat(format(stat_output2)[c(-1L,-3L)], sep = "\n")
   
   #Graphing First Plot
   plotoutput <- ggbarplot(sampledatachar, 
@@ -137,34 +152,34 @@ interaction_plots <- function(tablename,
     coord_cartesian(ylim = c(bound_lower, bound_upper))
   
   #Set 2nd Plot Bounds
-  bound_lower2 <- min(exposure_df$mean_SHBG)-2*max(exposure_df$se_SHBG)
+  bound_lower2 <- min(exposure_df$Means)-2*max(exposure_df$SE)
   bound_lower2[bound_lower2 < 0] <- 0
-  bound_upper2 <- max(exposure_df$mean_SHBG)+6*max(exposure_df$se_SHBG)
+  bound_upper2 <- max(exposure_df$Means)+6*max(exposure_df$SE)
   bound_diff2 <- bound_upper2 - bound_lower2
   
   #Pairwise Bracket Locations
-  signif1 <- max(exposure_df$mean_SHBG[1:3]) + 
-             max(exposure_df$se_SHBG[1:3]) + 
+  signif1 <- max(exposure_df$Means[1:3]) + 
+             max(exposure_df$SE[1:3]) + 
              0.09*bound_diff2
   
-  signif2 <- max(exposure_df$mean_SHBG[1:3]) + 
-             max(exposure_df$se_SHBG[1:3]) + 
+  signif2 <- max(exposure_df$Means[1:3]) + 
+             max(exposure_df$SE[1:3]) + 
              0.18*bound_diff2
   
-  signif3 <- max(exposure_df$mean_SHBG[1:3]) + 
-             max(exposure_df$se_SHBG[1:3]) + 
+  signif3 <- max(exposure_df$Means[1:3]) + 
+             max(exposure_df$SE[1:3]) + 
              0.27*bound_diff2
   
-  signif4 <- max(exposure_df$mean_SHBG[4:6]) + 
-             max(exposure_df$se_SHBG[4:6]) + 
+  signif4 <- max(exposure_df$Means[4:6]) + 
+             max(exposure_df$SE[4:6]) + 
              0.09*bound_diff2
   
-  signif5 <- max(exposure_df$mean_SHBG[4:6]) + 
-             max(exposure_df$se_SHBG[4:6]) + 
+  signif5 <- max(exposure_df$Means[4:6]) + 
+             max(exposure_df$SE[4:6]) + 
              0.18*bound_diff2
   
-  signif6 <- max(exposure_df$mean_SHBG[4:6]) + 
-             max(exposure_df$se_SHBG[4:6]) + 
+  signif6 <- max(exposure_df$Means[4:6]) + 
+             max(exposure_df$SE[4:6]) + 
              0.27*bound_diff2
   
   #Second Plot
