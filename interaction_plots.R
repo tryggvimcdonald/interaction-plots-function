@@ -162,7 +162,7 @@ interaction_plots <- function(tablename,
   bound_diff2 <- bound_upper2 - bound_lower2
   
   #Significance Tip Lengths
-  bar_diff_prop <- (max(exposure_df$Means)-min(exposure_df$Means))/bound_diff2  
+  bar_diff_prop <- (max(exposure_df$Means)-min(exposure_df$Means))/bound_diff2
   
   #Pairwise Bracket Locations
   signif1 <- max(exposure_df$Means[1:3]) + 
@@ -210,12 +210,12 @@ interaction_plots <- function(tablename,
   
   testplot <- testplot + stat_pvalue_manual(stat.test,
                                             label = "p.adj.signif",
-                                            tip.length = bar_diff_prop*(bar_diff_prop/100)-(bar_diff_prop/1000),
+                                            tip.length = bar_diff_prop*0.003645-0.000371,
                                             size = 4,
                                             y.position = c(signif1, signif2, signif3, signif4, signif5, signif6)) +
     stat_pvalue_manual(stat.test2,
                        label = "p.adj.signif",
-                       tip.length = bar_diff_prop*(bar_diff_prop/100)-(bar_diff_prop/1000),
+                       tip.length = bar_diff_prop*0.003645-0.000371,
                        y.position = bound_upper2-0.025*bound_diff2,
                        size = 4)
   
