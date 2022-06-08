@@ -1,3 +1,12 @@
+# R script that will plot phenotype values based off of a given SNP
+# and exposure. Output will be two plots, one stratified by exposure
+# and one not. Significance values of pairwise t-tests will be output
+# to the console and placed on the plots. Plot significance values are
+# Bonferroni corrected. No quotations are necessary in the input.
+# Exposure, SNP, and phenotype values should be in separate columns of
+# the data that is imported. SNP values in the input data should be
+# discrete values of 0, 1, and 2.
+
 library(stats)
 library(rstatix)
 library(utils)
