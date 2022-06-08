@@ -1,13 +1,11 @@
-library(dplyr)
-library(ggplot2)
-library(ggsignif)
 library(stats)
-library(rlang)
-library(utils)
-library(plotrix)
-library(ggpubr)
 library(rstatix)
-library(tibble)
+library(utils)
+library(tidyverse)
+library(plotrix)
+library(ggsignif)
+library(ggpubr)
+
 
 interaction_plots <- function(tablename, 
                               pheno, 
@@ -39,21 +37,18 @@ interaction_plots <- function(tablename,
   sampledatachar <- tablename
   
   #Creates a dataframe with mean and sd of SHBG, grouped by allele genotype
-  testdataframe <- summarise( group_by(sampledatachar, !!SNP),
-                              "Means" = mean(!!pheno),
-                              "SE" = std.error(!!pheno))
+  testdataframe <- sampledatachar %>%
+                     group_by(!!SNP) %>%
+                       summarise(Means = mean(!!pheno), SE = std.error(!!pheno))
   
   #Split data by exposure and genotype then apply mean and sd functions
-  exposure_df0 <- summarise( group_by(filter(sampledatachar, !!exposure == 0), !!SNP),
-                          "Means" = mean(!!pheno),
-                          "SE" = std.error(!!pheno))
-  exposure_df1 <- summarise( group_by(filter(sampledatachar, !!exposure == 1), !!SNP),
-                          "Means" = mean(!!pheno),
-                          "SE" = std.error(!!pheno))
-  exposure_df <- rbind(exposure_df0, exposure_df1)
-  exposure_df <- mutate(exposure_df, Exposure = c(0,0,0,1,1,1), .after = 1)
+  exposure_df <- sampledatachar %>%
+                    group_by(!!exposure, !!SNP) %>%
+                      summarise(Means = mean(!!pheno), SE = std.error(!!pheno))
+ 
+  #Print the 
   cat("\n\nMean and standard error for SNP values, grouped by exposure:\n\n")
-  cat(format(exposure_df)[c(-1L,-3L)], sep = "\n")
+  cat(format(exposure_df)[c(-1L,-2L,-4L)], sep = "\n")
   
   #First Graph Bound Calculations
   bound_lower <- min(testdataframe$Means)-2*max(testdataframe$SE)
