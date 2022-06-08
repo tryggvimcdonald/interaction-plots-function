@@ -153,9 +153,7 @@ interaction_plots <- function(tablename,
   bound_diff2 <- bound_upper2 - bound_lower2
   
   #Significance Tip Lengths
-  bar_diff_prop <- (max(exposure_df$Means)-min(exposure_df$Means))/bound_diff2
-  print(bar_diff_prop)
-  
+  bar_diff_prop <- (max(exposure_df$Means)-min(exposure_df$Means))/bound_diff2  
   
   #Pairwise Bracket Locations
   signif1 <- max(exposure_df$Means[1:3]) + 
