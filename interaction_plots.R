@@ -44,9 +44,9 @@ interaction_plots <- function(tablename,
   #Split data by exposure and genotype then apply mean and sd functions
   exposure_df <- sampledatachar %>%
                     group_by(!!exposure, !!SNP) %>%
-                      summarise(Means = mean(!!pheno), SE = std.error(!!pheno))
+                      summarise(Means = mean(!!pheno), SE = std.error(!!pheno), .groups = "keep")
  
-  #Print the 
+  #Print the mean and se values grouped by SNP and exposure
   cat("\n\nMean and standard error for SNP values, grouped by exposure:\n\n")
   cat(format(exposure_df)[c(-1L,-2L,-4L)], sep = "\n")
   
@@ -122,7 +122,7 @@ interaction_plots <- function(tablename,
   cat(format(stat_output)[c(-1L,-3L)], sep = "\n")
   
   stat_output2 <- select(stat.test, 1, group1, group2, statistic, p:p.adj.signif)
-  cat("\n\nStatistics and p-values stratified by",quo_name(exposure),":", "\n\n")
+  cat("\n\nStatistics and p-values stratified by ",quo_name(exposure),":", "\n\n", sep = "")
   cat(format(stat_output2)[c(-1L,-3L)], sep = "\n")
   
   #Graphing First Plot
@@ -151,6 +151,11 @@ interaction_plots <- function(tablename,
   bound_lower2[bound_lower2 < 0] <- 0
   bound_upper2 <- max(exposure_df$Means)+6*max(exposure_df$SE)
   bound_diff2 <- bound_upper2 - bound_lower2
+  
+  #Significance Tip Lengths
+  bar_diff_prop <- (max(exposure_df$Means)-min(exposure_df$Means))/bound_diff2
+  print(bar_diff_prop)
+  
   
   #Pairwise Bracket Locations
   signif1 <- max(exposure_df$Means[1:3]) + 
@@ -198,12 +203,12 @@ interaction_plots <- function(tablename,
   
   testplot <- testplot + stat_pvalue_manual(stat.test,
                                             label = "p.adj.signif",
-                                            tip.length = bound_diff2/10000,
+                                            tip.length = bar_diff_prop*(bar_diff_prop/100)-(bar_diff_prop/1000),
                                             size = 4,
                                             y.position = c(signif1, signif2, signif3, signif4, signif5, signif6)) +
     stat_pvalue_manual(stat.test2,
                        label = "p.adj.signif",
-                       tip.length = bound_diff2/10000,
+                       tip.length = bar_diff_prop*(bar_diff_prop/100)-(bar_diff_prop/1000),
                        y.position = bound_upper2-0.025*bound_diff2,
                        size = 4)
   
@@ -228,7 +233,7 @@ interaction_plots <- function(tablename,
                             nrow = 1,
                             ncol = 2,
                             common.legend = TRUE,
-                            legend = "bottom")
+                            legend = "right")
   }
   
   plot_final <- annotate_figure(plot_final,
