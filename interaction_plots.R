@@ -34,6 +34,9 @@ interaction_plots <- function(tablename,
   #num_plots - specify number of plot panels to display, can be 1, 2, or 3. Default is 3.
   #export - FALSE prevents plot output to file
   
+  #Check SNP Values
+  
+  
   
   #Put variables in quotes if they need them to play nicely with other functions
   pheno <- enquo(pheno)
@@ -95,8 +98,8 @@ interaction_plots <- function(tablename,
                                                          levels = c(0,1,2),
                                                          labels = c(homo_nonref, het, homo_ref)))
   
-  sampledatachar$Veg2 <- factor(pull(sampledatachar, !!exposure),
-                                levels = c("0", "1"))
+  sampledatachar <- mutate(sampledatachar, !!exposure := factor(pull(sampledatachar, !!exposure),
+                                levels = unique(pull(sampledatachar, !!exposure))))
   
   sampledatachar <- mutate(sampledatachar,
                            exposure_new = pull(sampledatachar,!!exposure))
@@ -164,30 +167,25 @@ interaction_plots <- function(tablename,
   #Significance Tip Lengths
   bar_diff_prop <- (max(exposure_df$Means)-min(exposure_df$Means))/bound_diff2
   
+  #Exposure Calculations for Significance Y Position Assignments
+  exp_unique <- n_distinct(sampledatachar$exposure_new)
+  n_calcs <- exp_unique*3
+  lapply_vector <- seq.int(1, n_calcs, 1)
+  
+  if(exp_unique > 2)
+  {
+    warning("Having more than 2 levels for the exposure variable may disrupt significance bar positions or tip lengths")
+  }
+  
   #Pairwise Bracket Locations
-  signif1 <- max(exposure_df$Means[1:3]) + 
-             max(exposure_df$SE[1:3]) + 
-             0.09*bound_diff2
-  
-  signif2 <- max(exposure_df$Means[1:3]) + 
-             max(exposure_df$SE[1:3]) + 
-             0.18*bound_diff2
-  
-  signif3 <- max(exposure_df$Means[1:3]) + 
-             max(exposure_df$SE[1:3]) + 
-             0.27*bound_diff2
-  
-  signif4 <- max(exposure_df$Means[4:6]) + 
-             max(exposure_df$SE[4:6]) + 
-             0.09*bound_diff2
-  
-  signif5 <- max(exposure_df$Means[4:6]) + 
-             max(exposure_df$SE[4:6]) + 
-             0.18*bound_diff2
-  
-  signif6 <- max(exposure_df$Means[4:6]) + 
-             max(exposure_df$SE[4:6]) + 
-             0.27*bound_diff2
+  signif_function <- function(x)
+  {
+    max(exposure_df$Means[I((((x+2) %/% 3)*3)-2):I(((x+2) %/% 3)*3)]) + 
+      max(exposure_df$SE[I((((x+2) %/% 3)*3)-2):I(((x+2) %/% 3)*3)]) + 
+      (0.09*(((x-1) %% 3) +1)*bound_diff2)
+  }
+ 
+  signif_vector <- sapply(lapply_vector, signif_function)
   
   #Second Plot
   testplot <- ggbarplot(sampledatachar,
@@ -212,13 +210,16 @@ interaction_plots <- function(tablename,
                                             label = "p.adj.signif",
                                             tip.length = bar_diff_prop*0.003645-0.000371,
                                             size = 4,
-                                            y.position = c(signif1, signif2, signif3, signif4, signif5, signif6)) +
-    stat_pvalue_manual(stat.test2,
-                       label = "p.adj.signif",
-                       tip.length = bar_diff_prop*0.003645-0.000371,
-                       y.position = bound_upper2-0.025*bound_diff2,
-                       size = 4)
-  
+                                            y.position = signif_vector) 
+  if(exp_unique == 2)
+  {
+    testplot <- testplot + stat_pvalue_manual(stat.test2,
+                                              label = "p.adj.signif",
+                                              tip.length = bar_diff_prop*0.003645-0.000371,
+                                              y.position = bound_upper2-0.025*bound_diff2,
+                                              size = 4)
+  }
+                        
   testplot <- ggpar(testplot, legend = "right") + 
     coord_cartesian(ylim = c(bound_lower2, bound_upper2))
   
@@ -243,16 +244,27 @@ interaction_plots <- function(tablename,
                             legend = "right")
   }
   
+  SNP_name <- str_split("rs161896", pattern = "_")[[1]][1]
+  
   plot_final <- annotate_figure(plot_final,
                                 top = text_grob(c(paste(quo_name(pheno),
-                                                      "by genotype, stratified by",
-                                                      quo_name(exposure)))))
+                                                        " by genotype at ",
+                                                        SNP_name,
+                                                        ", stratified by ",
+                                                        quo_name(exposure),
+                                                        sep = ""))))
   print(plot_final)
   
   #Export final plot as .png
   if(export != FALSE)
   {
-    ggexport(plot_final, filename = paste(getwd(),"/Interaction-Plot-Output.png", sep = ""))
+    ggexport(plot_final, filename = paste(getwd(), "/",
+                                          quo_name(pheno), "-",
+                                          SNP_name, "x",
+                                          quo_name(exposure), "-",
+                                          "barplot",".png",
+                                          sep = ""))
   }
   
+  cat("\n")
 }
