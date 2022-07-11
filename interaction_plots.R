@@ -31,7 +31,7 @@ interaction_plots <- function(tablename,
   #exposure - exposure (e.g. Vegetarianism)
   #nonref_allele - non-reference allele. 0 is interpreted as homozygous non-reference
   #ref_allele - reference allele. 2 is interpreted as homozygous reference
-  #num_plots - specify number of plot panels to display, can be 1, 2, or 3. Default is 3.
+  #num_plots - specify the number of the plot panel to display, can be 1, 2, or 3. Default is 3 to display both plots.
   #export - FALSE prevents plot output to file
   
   #Check SNP Values
@@ -46,17 +46,22 @@ interaction_plots <- function(tablename,
   ref_allele <- enquo(ref_allele)
   
   #Import data from user
-  sampledatachar <- tablename
+  sampledatachar <- tablename %>% 
+                      select(!!pheno, !!SNP, !!exposure) %>% 
+                        na.omit()
   
   #Creates a dataframe with mean and sd of SHBG, grouped by allele genotype
   testdataframe <- sampledatachar %>%
                      group_by(!!SNP) %>%
-                       summarise(Means = mean(!!pheno), SE = std.error(!!pheno))
+                       summarise(Means = mean(!!pheno),
+                                 SE = std.error(!!pheno))
   
   #Split data by exposure and genotype then apply mean and sd functions
   exposure_df <- sampledatachar %>%
                     group_by(!!exposure, !!SNP) %>%
-                      summarise(Means = mean(!!pheno), SE = std.error(!!pheno), .groups = "keep")
+                      summarise(Means = mean(!!pheno),
+                                SE = std.error(!!pheno),
+                                .groups = "keep")
  
   #Print the mean and se values grouped by SNP and exposure
   cat("\n\nMean and standard error for SNP values, grouped by exposure:\n\n")
@@ -244,7 +249,7 @@ interaction_plots <- function(tablename,
                             legend = "right")
   }
   
-  SNP_name <- str_split("rs161896", pattern = "_")[[1]][1]
+  SNP_name <- str_split(quo_name(SNP), pattern = "_")[[1]][1]
   
   plot_final <- annotate_figure(plot_final,
                                 top = text_grob(c(paste(quo_name(pheno),
@@ -258,12 +263,11 @@ interaction_plots <- function(tablename,
   #Export final plot as .png
   if(export != FALSE)
   {
-    ggexport(plot_final, filename = paste(getwd(), "/",
+    ggexport(plot_final, filename = paste0(getwd(), "/",
                                           quo_name(pheno), "-",
                                           SNP_name, "x",
                                           quo_name(exposure), "-",
-                                          "barplot",".png",
-                                          sep = ""))
+                                          "barplot",".png"))
   }
   
   cat("\n")
