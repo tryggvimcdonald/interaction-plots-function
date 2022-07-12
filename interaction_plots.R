@@ -58,11 +58,20 @@ interaction_plots <- function(tablename,
   
   #Split data by exposure and genotype then apply mean and sd functions
   exposure_df <- sampledatachar %>%
-                    group_by(!!exposure, !!SNP) %>%
-                      summarise(Means = mean(!!pheno),
-                                SE = std.error(!!pheno),
-                                .groups = "keep")
- 
+                   group_by(!!exposure, !!SNP) %>%
+                     summarise(Means = mean(!!pheno),
+                               SE = std.error(!!pheno),
+                               .groups = "keep")
+  
+  exposure_df_condensed <- exposure_df %>%
+                             ungroup() %>%  
+                               select(!!exposure, Means, SE) %>%
+                                 group_by(!!exposure) %>% 
+                                  summarise(Means = max(Means),
+                                            SE = max(SE),
+                                            .groups = "keep")
+                             
+  
   #Print the mean and se values grouped by SNP and exposure
   cat("\n\nMean and standard error for SNP values, grouped by exposure:\n\n")
   cat(format(exposure_df)[c(-1L,-2L,-4L)], sep = "\n")
@@ -174,7 +183,7 @@ interaction_plots <- function(tablename,
   
   #Exposure Calculations for Significance Y Position Assignments
   exp_unique <- n_distinct(sampledatachar$exposure_new)
-  n_calcs <- exp_unique*3
+  n_calcs <- nrow(stat_output2)
   lapply_vector <- seq.int(1, n_calcs, 1)
   
   if(exp_unique > 2)
@@ -185,9 +194,16 @@ interaction_plots <- function(tablename,
   #Pairwise Bracket Locations
   signif_function <- function(x)
   {
-    max(exposure_df$Means[I((((x+2) %/% 3)*3)-2):I(((x+2) %/% 3)*3)]) + 
+    if (n_calcs %% 3 == 0)
+    {
+      max(exposure_df$Means[I((((x+2) %/% 3)*3)-2):I(((x+2) %/% 3)*3)]) + 
       max(exposure_df$SE[I((((x+2) %/% 3)*3)-2):I(((x+2) %/% 3)*3)]) + 
-      (0.09*(((x-1) %% 3) +1)*bound_diff2)
+      (0.09*(((x-1) %% 3) + 1)*bound_diff2)
+    } else {
+        exposure_df_condensed$Means[I((x+2) %/% 3)] +
+        exposure_df_condensed$SE[I((x+2) %/% 3)] +
+        (0.09*(((x-1) %% 3) + 1)*bound_diff2)
+    }
   }
  
   signif_vector <- sapply(lapply_vector, signif_function)
